@@ -7,6 +7,7 @@ import { EmptyState, Field, Modal, PasswordField, StatusBadge } from "./CommonUI
 import { DEFAULT_FAQS } from "./CustomerScreens.jsx";
 import { isValidIndianMobile } from "./security.js";
 import { DualSecurityGate } from "./AuthScreens.jsx";
+import { SITE_PAGE_KEYS, getSitePageAllLangs } from "./sitePages.js";
 
 export function AdminTexts() {
     const { t: tt } = useApp();
@@ -41,7 +42,7 @@ export function AdminComingSoon() {
     const { t: tt } = useApp();
     const { db, update, notify } = useApp();
     const [msg, setMsg] = useState((db.comingSoon && db.comingSoon.message) || "");
-    const toggleFeature = (key) => update(d => { d.comingSoon = d.comingSoon || { features: {}, message: "" }; d.comingSoon.features = d.comingSoon.features || {}; d.comingSoon.features[key] = !d.comingSoon.features[key]; });
+    const toggleFeature = (key) => update(d => { d.comingSoon = d.comingSoon || { features: {}, message: "" }; d.comingSoon.features = d.comingSoon.features || {}; d.comingSoon.features[key] = !csOn(d, key); });
     const toggleProduct = (id) => update(d => { const p = d.products.find(x => x.id === id); p.comingSoon = !p.comingSoon; });
     const saveMsg = () => { update(d => { d.comingSoon = d.comingSoon || { features: {}, message: "" }; d.comingSoon.message = msg; }); notify(tt("m_coming_soon_message_save_ho_"), "success"); };
     return (<div><div style={{ fontWeight: 700, fontSize: 18, marginBottom: 4 }}>{tt("ui_coming_soon_control")}</div><div style={{ fontSize: 12, color: "#8a7360", marginBottom: 14 }}>{tt("x_jo_feature_ya_product_ab_7e9c")}</div><div className="jb-card" style={{ padding: 14, marginBottom: 14 }}><div style={{ fontWeight: 600, marginBottom: 8 }}>{tt("ui_features_screens")}</div>{COMING_SOON_FEATURES.map(([k, label]) => (<label key={k} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: `1px solid ${T.border}`, fontSize: 13 }}><input type="checkbox" checked={csOn(db, k)} onChange={() => toggleFeature(k)} /><span style={{ flex: 1 }}>{tt("cs_" + k)}</span>{csOn(db, k) && <span style={{ fontSize: 11, color: T.maroon, fontWeight: 700 }}>{tt("x_coming_soon_6d6d")}</span>}</label>))}</div><div className="jb-card" style={{ padding: 14, marginBottom: 14, maxWidth: 480 }}><div style={{ fontWeight: 600, marginBottom: 6 }}>{tt("ui_coming_soon_message_optional")}</div><textarea className="jb-input" rows={2} value={msg} onChange={e => setMsg(e.target.value)} placeholder={tt("m_khaali_chhodne_par_default_m")} /><button className="jb-btn jb-btn-primary" style={{ marginTop: 8 }} onClick={saveMsg}>{tt("ui_save_message")}</button></div><div className="jb-card" style={{ padding: 14 }}><div style={{ fontWeight: 600, marginBottom: 8 }}>{tt("ui_products")}</div>{db.products.length === 0 ? <EmptyState text={tt("x_koi_product_nahi_hai_dbed")} /> : db.products.map(p => (<label key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0", borderBottom: `1px solid ${T.border}`, fontSize: 13 }}><input type="checkbox" checked={!!p.comingSoon} onChange={() => toggleProduct(p.id)} /><span style={{ flex: 1 }}>{p.name}</span>{p.comingSoon && <span style={{ fontSize: 11, color: T.maroon, fontWeight: 700 }}>{tt("x_coming_soon_6d6d")}</span>}</label>))}</div></div>);
@@ -157,17 +158,18 @@ export function AdminSecurity() {
 
 export function AdminPages() {
     const { t: tt } = useApp();
-    var _a, _b, _c, _d;
     const { db, update, notify } = useApp();
-    const [about, setAbout] = useState(((_a = db.sitePages) === null || _a === void 0 ? void 0 : _a.about) || "");
-    const [terms, setTerms] = useState(((_b = db.sitePages) === null || _b === void 0 ? void 0 : _b.terms) || "");
-    const [privacy, setPrivacy] = useState(((_c = db.sitePages) === null || _c === void 0 ? void 0 : _c.privacy) || "");
-    const [resellerTerms, setResellerTerms] = useState(((_d = db.sitePages) === null || _d === void 0 ? void 0 : _d.resellerTerms) || "");
+    const [langTab, setLangTab] = useState("hi");
+    const langNames = { hi: "हिंदी", en: "English", bn: "বাংলা" };
+    // Har page ka text teeno bhasha mein: { about: {hi,en,bn}, terms: {...}, ... }
+    const [pages, setPages] = useState(() => Object.fromEntries(SITE_PAGE_KEYS.map(k => [k, getSitePageAllLangs(db, k)])));
+    const setText = (page, v) => setPages(p => ({ ...p, [page]: { ...p[page], [langTab]: v } }));
     const save = () => {
-        update(d => { d.sitePages = { about, terms, privacy, resellerTerms }; });
+        update(d => { d.sitePages = JSON.parse(JSON.stringify(pages)); });
         notify(tt("m_pages_update_ho_gayi"), "success");
     };
-    return (<div><div style={{ fontWeight: 700, fontSize: 18, marginBottom: 4 }}>{tt("ui_site_pages_about_terms_priva")}</div><div style={{ fontSize: 12, color: "#8a7360", marginBottom: 14 }}>{tt("x_ye_content_customer_app__5803")}</div><div className="jb-card" style={{ padding: 14, marginBottom: 14 }}><div style={{ fontWeight: 600, marginBottom: 8 }}>{tt("ui_about_us")}</div><textarea className="jb-input" rows={6} value={about} onChange={e => setAbout(e.target.value)} placeholder={tt("m_apne_business_ke_baare_mein_")} /></div><div className="jb-card" style={{ padding: 14, marginBottom: 14 }}><div style={{ fontWeight: 600, marginBottom: 8 }}>{tt("ui_terms_conditions")}</div><textarea className="jb-input" rows={6} value={terms} onChange={e => setTerms(e.target.value)} placeholder={tt("m_terms_conditions_likhein")} /></div><div className="jb-card" style={{ padding: 14, marginBottom: 14 }}><div style={{ fontWeight: 600, marginBottom: 8 }}>{tt("ui_privacy_policy")}</div><textarea className="jb-input" rows={6} value={privacy} onChange={e => setPrivacy(e.target.value)} placeholder={tt("m_privacy_policy_likhein")} /></div><div className="jb-card" style={{ padding: 14, marginBottom: 14 }}><div style={{ fontWeight: 600, marginBottom: 8 }}>{tt("ui_reseller_agreement_reseller_")}</div><textarea className="jb-input" rows={6} value={resellerTerms} onChange={e => setResellerTerms(e.target.value)} placeholder={tt("m_reseller_ke_liye_terms_condi")} /></div><button className="jb-btn jb-btn-primary" onClick={save}>{tt("ui_save_all_pages")}</button></div>);
+    const block = (page, title, placeholder) => (<div className="jb-card" style={{ padding: 14, marginBottom: 14 }}><div style={{ fontWeight: 600, marginBottom: 8 }}>{title}</div><textarea className="jb-input" rows={8} value={pages[page][langTab]} onChange={e => setText(page, e.target.value)} placeholder={placeholder} /></div>);
+    return (<div><div style={{ fontWeight: 700, fontSize: 18, marginBottom: 4 }}>{tt("ui_site_pages_about_terms_priva")}</div><div style={{ fontSize: 12, color: "#8a7360", marginBottom: 14 }}>{tt("x_ye_content_customer_app__5803")}</div><div style={{ display: "flex", gap: 8, marginBottom: 14 }}>{["hi", "en", "bn"].map(l => (<button key={l} className={langTab === l ? "jb-btn jb-btn-primary" : "jb-btn"} onClick={() => setLangTab(l)}>{langNames[l]}</button>))}</div>{block("about", tt("ui_about_us"), tt("m_apne_business_ke_baare_mein_"))}{block("terms", tt("ui_terms_conditions"), tt("m_terms_conditions_likhein"))}{block("privacy", tt("ui_privacy_policy"), tt("m_privacy_policy_likhein"))}{block("resellerTerms", tt("ui_reseller_agreement_reseller_"), tt("m_reseller_ke_liye_terms_condi"))}<button className="jb-btn jb-btn-primary" onClick={save}>{tt("ui_save_all_pages")}</button></div>);
 }
 
 export function AdminAuditLog() {
